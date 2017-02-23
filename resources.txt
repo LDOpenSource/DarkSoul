@@ -1,0 +1,6 @@
+http://mattwarren.org/2016/12/14/Why-is-Reflection-slow/
+http://stackoverflow.com/questions/298976/is-there-a-better-alternative-than-this-to-switch-on-type
+http://csharpindepth.com/Articles/General/Singleton.aspx
+http://enterprisecraftsmanship.com/2016/05/03/singleton-vs-dependency-injection/
+http://stackoverflow.com/questions/16745629/how-to-abstract-a-singleton-class
+https://www.codeproject.com/Articles/10951/Fast-late-bound-invocation-through-DynamicMethod-d
