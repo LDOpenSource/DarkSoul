@@ -2,7 +2,7 @@
 using System.Reflection;
 using System.Reflection.Emit;
 
-namespace DarkSoul.Network.Reflection
+namespace DarkSoul.Core.Reflection
 {
     public delegate object DynamicMethodDelegate(object target, params object[] args);
     public delegate object DynamicReadValueDelegate(object target);

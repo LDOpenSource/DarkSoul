@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 
-namespace DarkSoul.Network.Injection
+namespace DarkSoul.Core.Injection
 {
     public abstract class Singleton<T> where T : class
     {
