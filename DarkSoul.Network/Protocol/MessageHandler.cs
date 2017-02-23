@@ -1,6 +1,6 @@
-﻿using DarkSoul.Network.Attribute;
-using DarkSoul.Network.Injection;
-using DarkSoul.Network.Reflection;
+﻿using DarkSoul.Core.Injection;
+using DarkSoul.Core.Reflection;
+using DarkSoul.Network.Attribute;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;

@@ -1,6 +1,6 @@
-﻿using DarkSoul.Core.Interfaces;
+﻿using DarkSoul.Core.Injection;
+using DarkSoul.Core.Interfaces;
 using DarkSoul.Network.Extension;
-using DarkSoul.Network.Injection;
 using System;
 using System.Collections.Concurrent;
 using System.Linq;
