@@ -1,4 +1,5 @@
-﻿using DarkSoul.Network.Protocol;
+﻿using DarkSoul.Core.Json;
+using DarkSoul.Network.Protocol;
 using DarkSoul.Network.Protocol.Message;
 using System;
 using System.Net;
@@ -34,6 +35,9 @@ namespace DarkSoul.Network
             MessageHandler.Instance.Initilize(assembly);
             ProtocolTypeManager.Instance.Initialize();
             MessageReceiver.Instance.Build();
+            var config = new JsonConfig();
+            config.AddAssemblies(assembly);
+            config.InitConfig();
             Init();
 
             // Init socket
