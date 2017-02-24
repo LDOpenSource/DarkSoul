@@ -1,4 +1,5 @@
 ﻿using DarkSoul.Core.Interfaces;
+using DarkSoul.Core.IO.CustomTypes;
 using System;
 using System.IO;
 using System.Text;
@@ -261,42 +262,93 @@ namespace DarkSoul.Core.IO
         private const int INT_SIZE = 32;
         private const int CHUNCK_BIT_SIZE = 7;
 
+        private static int SHORT_MIN_VALUE = -32768;
+        private static int SHORT_MAX_VALUE = 32767;
+
         private const int MASK_1 = 128;
         private const int MASK_0 = 127;
 
-        public void WriteVarInt(int @int)
+        public void WriteVarInt(int value)
         {
-            var local_5 = 0;
-            BigEndianWriter local_2 = new BigEndianWriter();
+            WriteInt(value); //just for fast for the moment
+            //if (value >= 0 && value <= MASK_0)
+            //{
+            //    WriteByte((byte)value);
+            //    return;
+            //}
+            //int b = 0;
+            //int c = value;
+            //while (c != 0 && c != -1)
+            //{
+            //    b = c & MASK_0;
+            //    c = c >> CHUNCK_BIT_SIZE;
+            //    if (c > 0)
+            //    {
+            //        b = b | MASK_1;
+            //    }
+            //    WriteByte((byte)b);
+            //}
+        }
 
-            if (@int >= 0 && @int <= MASK_0)
+        public void WriteVarShort(int value)
+        {
+            WriteInt(value); //just for fast for the moment
+            //if (value > SHORT_MAX_VALUE || value < SHORT_MIN_VALUE)            
+            //    throw new Exception("Forbidden value");            
+            //else
+            //{
+            //    var b = 0;
+            //    if ((value >= 0) && (value <= MASK_0))
+            //    {
+            //        WriteByte((byte)value);
+            //        return;
+            //    }
+            //    var c = value & 65535;
+            //    while (c != 0 && c != -1)
+            //    {
+            //        b = (c & MASK_0);
+            //        c = c >> CHUNCK_BIT_SIZE;
+            //        if (c > 0)                    
+            //            b = b | MASK_1;                    
+            //        WriteByte((byte)b);
+            //    }
+            //}
+        }
+
+        public void WriteVarLong(double value)
+        {
+            WriteDouble(value); //just for fast for the moment
+            //uint i = 0;
+            //var val = CustomInt64.fromNumber(value);
+            //if (val.high == 0)            
+            //    Writeint32(val.low);            
+            //else
+            //{
+            //    i = 0;
+            //    while (i < 4)
+            //    {
+            //        WriteByte((byte)(val.low & 127 | 128));
+            //        val.low = val.low >> 7;
+            //        i++;
+            //    }
+            //    if ((val.high & 268435455 << 3) == 0)                
+            //        WriteByte((byte)(val.high << 4 | val.low));                
+            //    else
+            //    {
+            //        WriteByte((byte)(((val.high << 4) | val.low) & 127 | 128));
+            //        Writeint32(val.high >> 3);
+            //    }
+            //}
+        }
+
+        private void Writeint32(uint value)
+        {
+            while (value >= 128)
             {
-                local_2.WriteByte((byte)@int);
-                WriteBytes(local_2.Data);
-                return;
+                WriteByte((byte)(value & 127 | 128));
+                value = value >> 7;
             }
-
-            int local_3 = @int;
-            BigEndianWriter local_4 = new BigEndianWriter();
-
-            while (local_3 != 0)
-            {
-                local_4.WriteByte((byte)(local_3 & MASK_0));
-                local_4.Position = local_4.Data.Length - 1;
-
-                BigEndianReader local_4_reader = new BigEndianReader(local_4.Data, local_4.Data.Length);
-                local_5 = local_4_reader.ReadByte();
-                local_4 = new BigEndianWriter(local_4_reader.Buffer);
-
-                local_3 = (int)((uint)local_3 >> CHUNCK_BIT_SIZE);
-                if (local_3 > 0)
-                {
-                    local_5 = local_5 | MASK_1;
-                }
-                local_2.WriteByte((byte)local_5);
-            }
-
-            WriteBytes(local_2.Data);
+            WriteByte((byte)value);
         }
 
         public void Dispose()

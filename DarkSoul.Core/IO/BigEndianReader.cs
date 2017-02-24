@@ -153,38 +153,40 @@ namespace DarkSoul.Core.IO
 
         public int ReadVarInt()
         {
-            var local_4 = 0;
-            var local_1 = 0;
-            var local_2 = 0;
-            var local_3 = false;
+            return ReadInt(); // Just for test fast 
+            //var local_4 = 0;
+            //var local_1 = 0;
+            //var local_2 = 0;
+            //var local_3 = false;
 
-            while (local_2 < INT_SIZE)
-            {
-                local_4 = ReadByte();
-                local_3 = (local_4 & MASK_1) == MASK_1;
+            //while (local_2 < INT_SIZE)
+            //{
+            //    local_4 = ReadByte();
+            //    local_3 = (local_4 & MASK_1) == MASK_1;
 
-                if (local_2 > 0)
-                {
-                    local_1 += ((local_4 & MASK_1) << local_2);
-                }
-                else
-                {
-                    local_1 += (local_4 & MASK_0);
-                }
+            //    if (local_2 > 0)
+            //    {
+            //        local_1 += ((local_4 & MASK_1) << local_2);
+            //    }
+            //    else
+            //    {
+            //        local_1 += (local_4 & MASK_0);
+            //    }
 
-                local_2 += CHUNCK_BIT_SIZE;
+            //    local_2 += CHUNCK_BIT_SIZE;
 
-                if (!local_3)
-                {
-                    return local_1;
-                }
-            }
+            //    if (!local_3)
+            //    {
+            //        return local_1;
+            //    }
+            //}
 
-            throw new Exception("Too much data");
+            //throw new Exception("Too much data");
         }
 
         public short ReadVarShort()
         {
+            return (short)ReadInt(); // Just for test fast
             int b = 0;
             short value = 0;
             int offset = 0;
@@ -214,8 +216,13 @@ namespace DarkSoul.Core.IO
             throw new Exception("Too much data");
         }
 
+        public ushort ReadVarUhShort() => (ushort)ReadVarShort();
 
-        public double ReadVarLong() => ReadInt64().toNumber();
+        public double ReadVarLong() => ReadDouble(); //just for test
+
+        public uint ReadVarUhInt() => (uint)ReadVarInt();
+
+        public double ReadVarUhLong() => ReadDouble(); //just for test
 
         private CustomInt64 ReadInt64()
         {
@@ -263,6 +270,53 @@ namespace DarkSoul.Core.IO
             return result;
         }
 
+        private CustomUInt64 ReadUInt64()
+        {
+            uint b = 0;
+            var result = new CustomUInt64();
+            int i = 0;
+            while (true)
+            {
+                b = ReadByte();
+                if (i == 28)                
+                    break;                
+                if (b >= 128)
+                {
+                    result.low = result.low | (b & 127) << i;
+                    i = i + 7;
+                    continue;
+                }
+                result.low = result.low | b << i;
+                return result;
+            }
+
+            if (b >= 128)
+            {
+                b = b & 127;
+                result.low = result.low | b << i;
+                result.high = b >> 4;
+                i = 3;
+                while (true)
+                {
+                    b = ReadByte();
+                    if (i < 32)
+                    {
+                        if (b >= 128)                        
+                            result.high = result.high | (b & 127) << i;                        
+                        else                        
+                            break;                        
+                    }
+                    i = i + 7;
+                }
+
+                result.high = result.high | b << i;
+                return result;
+            }
+            result.low = result.low | b << i;
+            result.high = b >> 4;
+            return result;
+        }
+
         public void Seek(int offset, SeekOrigin seekOrigin)
         {
             if (seekOrigin == SeekOrigin.Begin)
@@ -281,6 +335,6 @@ namespace DarkSoul.Core.IO
         public void Dispose()
         {
 
-        }
+        }        
     }
 }

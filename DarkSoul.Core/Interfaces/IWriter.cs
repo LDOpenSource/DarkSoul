@@ -40,6 +40,12 @@ namespace DarkSoul.Core.Interfaces
 
         void WriteBytes(byte[] data);
 
+        void WriteVarInt(int @int);
+
+        void WriteVarShort(int @int);
+
+        void WriteVarLong(double @double);
+
         void Clear();
     }
 }

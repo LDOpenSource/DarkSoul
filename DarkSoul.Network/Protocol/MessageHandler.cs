@@ -1,4 +1,4 @@
-﻿using DarkSoul.Core.Injection;
+﻿using DarkSoul.Core.Instance;
 using DarkSoul.Core.Reflection;
 using DarkSoul.Network.Attribute;
 using System;
@@ -37,7 +37,7 @@ namespace DarkSoul.Network.Protocol
         public IEnumerable<NetworkMessage> Process(NetworkMessage message, Stream client)
         {
             if(_handlers.TryGetValue(message.Id, out var value))            
-                return (IEnumerable<NetworkMessage>)_handlers[message.Id].Invoke(null, client, message);
+                return (IEnumerable<NetworkMessage>)value.Invoke(null, client, message);
             throw new Exception($"Message with ID : {message.Id} don't have handler");
         }
     }

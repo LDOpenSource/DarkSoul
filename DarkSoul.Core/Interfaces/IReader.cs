@@ -42,6 +42,14 @@ namespace DarkSoul.Core.Interfaces
 
         int ReadVarInt();
 
+        uint ReadVarUhInt();
+
+        double ReadVarUhLong();
+
+        short ReadVarShort();
+
+        ushort ReadVarUhShort();
+
         void SkipBytes(int n);
     }
 }

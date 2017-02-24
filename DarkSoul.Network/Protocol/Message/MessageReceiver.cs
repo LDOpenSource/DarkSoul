@@ -1,4 +1,4 @@
-﻿using DarkSoul.Core.Injection;
+﻿using DarkSoul.Core.Instance;
 using DarkSoul.Core.Interfaces;
 using DarkSoul.Network.Extension;
 using System;
@@ -42,16 +42,17 @@ namespace DarkSoul.Network.Protocol.Message
         /// <returns></returns>
         public NetworkMessage BuildMessage(ushort id, IReader reader)
         {
-            if (!_messages.ContainsKey(id))
-                throw new Exception($"Message with ID : {id} doesn't exist");
+            if(_messages.TryGetValue(id, out var value))
+            {
+                var message = value();
 
-            var message = _messages[id]();
+                if (message == null) // I don't think it is possible
+                    throw new Exception($"Constructors[{id}] (delegate {_messages[id]}) does not exist");
 
-            if (message == null)
-                throw new Exception($"Constructors[{id}] (delegate {_messages[id]}) does not exist");
-
-            message.Unpack(reader);
-            return message;
+                message.Unpack(reader);
+                return message;
+            }
+            throw new Exception($"Message with ID : {id} doesn't exist");            
         }
     }
 }

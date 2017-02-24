@@ -12,7 +12,7 @@ namespace DarkSoul.Core.IO.CustomTypes
             : base(low, high)
         { }
 
-        public static CustomInt64 fromNumber(long n)
+        public static CustomInt64 fromNumber(double n)
         {
             return new CustomInt64((uint)n, (uint)Math.Floor(n / 4.294967296E9));
         }

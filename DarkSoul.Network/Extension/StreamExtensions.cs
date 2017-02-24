@@ -37,7 +37,7 @@ namespace DarkSoul.Network
             });
         }
 
-        public static IObserver<ArraySegment<byte>> ToStreamObserver(this Stream stream, CancellationToken token)
+        public static IObserver<ArraySegment<byte>> ToStreamObserver<T>(this T stream, CancellationToken token) where T : Stream
         {
             return Observer.Create<ArraySegment<byte>>(async buffer =>
             {
@@ -55,10 +55,11 @@ namespace DarkSoul.Network
                         {
                             msg.Pack(writer);
                             await stream.WriteAsync(writer.Data, 0, writer.Data.Length, token);
-                        }                        
+                        }
                     }
+                    mb = new MessageBuilder();
                 }
-                
+
             });
         }
     }

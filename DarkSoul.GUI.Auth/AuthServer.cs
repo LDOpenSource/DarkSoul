@@ -18,7 +18,7 @@ namespace DarkSoul.GUI.Auth
 
         public override IObserver<ArraySegment<byte>> ToClientObserver(Socket socket, CancellationToken token)
         {
-            return new AuthClient(socket).ToStreamObserver(token); //just use this like a AuthServer
+            return new AuthClient(socket, token).ToStreamObserver(token); //just use this like a AuthServer
         }
     }
 }
