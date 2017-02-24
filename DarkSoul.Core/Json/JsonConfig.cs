@@ -49,20 +49,42 @@ namespace DarkSoul.Core.Json
                       .SelectMany(t => t.GetFields(BindingFlags.GetField | BindingFlags.Public | BindingFlags.Static))
                       .Where(m => m.GetCustomAttributes(typeof(VariableAttribute), false).Count() > 0)
                       .ToArray();
+                var settingsClasses = JsonConvert.DeserializeObject<dynamic>(file);
                 foreach (var field in fields)
                 {
                     if (!field.IsStatic)
                         throw new Exception($"Field {field.Name} in {field.DeclaringType.Name} is not static");
-                    //get data from json and set it
-                    var settingsClasses = JsonConvert.DeserializeObject<dynamic>(file);
+                    //get data from json and set it                    
                     var settingSection = settingsClasses[field.DeclaringType.Name];
 
                     if(settingSection != null)
                     {
                         var value = JsonConvert.DeserializeObject(JsonConvert.SerializeObject(settingSection[field.Name]));
-                        if(value is JArray)
-                            value = ((JArray)value).Select(jv => (dynamic)jv).Select(x => Convert.ChangeType(x.Value, field.FieldType.GetElementType())).ToArray(); //this return object -_-
-                        field.SetValue(null, Convert.ChangeType(value, field.FieldType));
+                        if (value is JArray)
+                        {
+                            var jArray = (JArray)value;
+                            object[] array = jArray.Select(jv => ((dynamic)jv).Value).ToArray();
+                            if (array.Length > 0)
+                            {
+                                var fielType = field.FieldType.GetElementType();
+                                if (fielType == typeof(int))
+                                    field.SetValue(null, jArray.ToObject<int[]>());
+                                else if (fielType == typeof(short))
+                                    field.SetValue(null, jArray.ToObject<short[]>());
+                                else if (fielType == typeof(long))
+                                    field.SetValue(null, jArray.ToObject<long[]>());
+                                else if (fielType == typeof(double))
+                                    field.SetValue(null, jArray.ToObject<string[]>());
+                                else if (fielType == typeof(decimal))
+                                    field.SetValue(null, jArray.ToObject<decimal[]>());
+                                else if (fielType == typeof(string))
+                                    field.SetValue(null, jArray.ToObject<string[]>());
+                                else
+                                    throw new Exception($"Not managed type {fielType}");
+                            }                        
+                        }
+                        else
+                            field.SetValue(null, Convert.ChangeType(value, field.FieldType));
                     }
                 }
             }
