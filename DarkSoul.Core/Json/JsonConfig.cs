@@ -98,7 +98,7 @@ namespace DarkSoul.Core.Json
                 var fields = assembly.GetTypes()
                       .SelectMany(t => t.GetFields(BindingFlags.GetField | BindingFlags.Public | BindingFlags.Static))
                       .Where(m => m.GetCustomAttributes(typeof(VariableAttribute), false).Count() > 0)
-                      .ToArray();
+                      .ToArray();                
                 foreach (var field in fields)
                 {
                     //get data from json and set it
@@ -112,12 +112,50 @@ namespace DarkSoul.Core.Json
                         classDic.Add(field.DeclaringType.Name, new Dictionary<string, object> {
                             { field.Name, value }
                         });
-                    }
-                    
+                    }                    
                 }
             }
             var json = JsonConvert.SerializeObject(classDic, Formatting.Indented);
             File.WriteAllText(_jsonName, json);
+        }
+
+        public void RecreateFile()
+        {
+            var classDic = new Dictionary<string, Dictionary<string, object>>(); //class name, fieldname, value
+            var file = File.ReadAllText(_jsonName);
+            foreach (var assembly in _assemblies)
+            {
+                var fields = assembly.GetTypes()
+                      .SelectMany(t => t.GetFields(BindingFlags.GetField | BindingFlags.Public | BindingFlags.Static))
+                      .Where(m => m.GetCustomAttributes(typeof(VariableAttribute), false).Count() > 0)
+                      .ToArray();
+                var settingsClasses = JsonConvert.DeserializeObject<dynamic>(file);
+                foreach (var field in fields)
+                {
+                    var settingSection = settingsClasses[field.DeclaringType.Name];
+                    dynamic value;
+                    if (settingSection != null) // variable already exist on file
+                    {
+                        value = JsonConvert.DeserializeObject(JsonConvert.SerializeObject(settingSection[field.Name]));
+                        if (value is JArray)                        
+                            value = ((JArray)value).Select(jv => ((dynamic)jv).Value).ToArray();
+                    }
+                    else // variable don't exist on file
+                        value = field.GetValue(null);                        
+                    
+                    if (classDic.TryGetValue(field.DeclaringType.Name, out var list))
+                        list.Add(field.Name, value);
+                    else
+                    {
+                        classDic.Add(field.DeclaringType.Name, new Dictionary<string, object> {
+                            { field.Name, value }
+                        });
+                    }
+                }
+            }
+            var json = JsonConvert.SerializeObject(classDic, Formatting.Indented);
+            File.WriteAllText(_jsonName, json);
+            LoadConfig();
         }
     }
 }
