@@ -10,7 +10,10 @@ namespace DarkSoul.GUI.Auth
         public AuthServer(string ip, int port) : base(ip, port)
         {
         }
-
+        
+        /// <summary>
+        /// This initiate the Main Thread for the AuthServer
+        /// </summary>
         public override void Init()
         {
             //do your init stuff

@@ -1,5 +1,3 @@
-
-
 // Generated on 02/23/2017 16:54:05
 using System;
 using System.Collections.Generic;

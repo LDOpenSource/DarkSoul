@@ -11,6 +11,12 @@ namespace DarkSoul.Network
 {
     public static class StreamExtensions
     {
+        /// <summary>
+        /// Stream Object, to Observable Stream Object
+        /// </summary>
+        /// <param name="stream"></param>
+        /// <param name="size"></param>
+        /// <returns></returns>
         public static IObservable<ArraySegment<byte>> ToStreamObservable(this Stream stream, int size)
         {
             return Observable.Create<ArraySegment<byte>>(async (observer, token) =>
@@ -25,6 +31,7 @@ namespace DarkSoul.Network
                         if (received == 0)
                             break;
 
+                        // Read the buffer, offset and recieved
                         observer.OnNext(new ArraySegment<byte>(buffer, 0, received));
                     }
 
