@@ -36,7 +36,7 @@ namespace DarkSoul.Network
             ProtocolTypeManager.Instance.Initialize();
             MessageReceiver.Instance.Build();
             var config = new JsonConfig();
-            config.AddAssemblies(assembly);
+            config.AddAssemblies(assembly, GetType().GetTypeInfo().Assembly);
             config.InitConfig();
             Init();
 

@@ -103,10 +103,8 @@ namespace DarkSoul.Core.Json
                 {
                     //get data from json and set it
                     var value = field.GetValue(null);
-                    if (classDic.TryGetValue(field.DeclaringType.Name, out var list))
-                    {
-                        list.Add(field.Name, value);
-                    }
+                    if (classDic.TryGetValue(field.DeclaringType.Name, out var list))                    
+                        list.Add(field.Name, value);                    
                     else
                     {
                         classDic.Add(field.DeclaringType.Name, new Dictionary<string, object> {

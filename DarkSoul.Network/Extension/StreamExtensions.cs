@@ -3,6 +3,7 @@ using DarkSoul.Network.Protocol;
 using DarkSoul.Network.Protocol.Message;
 using System;
 using System.IO;
+using System.Net.Sockets;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Threading;
