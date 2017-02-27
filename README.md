@@ -27,6 +27,6 @@ All code it's from ASP.Net Core Hubs, edited to make compatible with Net Standar
 The solution contains a resources.txt file that contains usefull c# research links
 
 # Credits
-Reactive Socket by JetBlack [link to Repo!](https://github.com/rob-blackbourn/JetBlack.Network)
-SignalR by Microsft [link to Repo!](https://github.com/aspnet/SignalR)
-Other credits to page resources authors on resources.txt
+- Reactive Socket by JetBlack [link to Repo!](https://github.com/rob-blackbourn/JetBlack.Network)
+- SignalR by Microsft [link to Repo!](https://github.com/aspnet/SignalR)
+- Other credits to page resources authors on resources.txt
