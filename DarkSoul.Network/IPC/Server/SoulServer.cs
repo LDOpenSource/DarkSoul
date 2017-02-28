@@ -17,7 +17,7 @@ using DarkSoul.Network.IPC.Server.Descriptors;
 using System.Collections.Generic;
 using DarkSoul.Network.IPC.Server.Lookup;
 using DarkSoul.Network.IPC.Server.Json;
-using Newtonsoft.Json.Linq;
+using System.Diagnostics;
 
 namespace DarkSoul.Network.IPC.Server
 {
@@ -31,7 +31,7 @@ namespace DarkSoul.Network.IPC.Server
 
         public CancellationTokenSource Cancel { get; private set; }
 
-        public JsonSerializer JsonSerializer { get; internal set; }
+        public JsonSerializer JsonSerializer { get; internal set; } = new JsonSerializer();
 
         public SoulServer(string ip, int port)
         {
@@ -40,16 +40,16 @@ namespace DarkSoul.Network.IPC.Server
             Init(ip, port);
         }
 
-        public void Build()
+        private void Build()
         {
             var souls =
                 from type in typeof(ISoul).GetTypeInfo().Assembly.GetTypes()
-                where type.GetTypeInfo().IsSubclassOf(typeof(ISoul)) && !type.GetTypeInfo().IsAbstract
+                where type.GetTypeInfo().ImplementedInterfaces.Contains((typeof(ISoul)))
                 select type;
 
             foreach (var message in souls)
             {
-                var methods = message.GetMethods();
+                var methods = message.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
                 foreach (var method in methods)
                 {
                     _handlers.TryAdd(method.Name, DynamicDelegateStaticFactory.CreateMethodCaller(method));
@@ -77,6 +77,7 @@ namespace DarkSoul.Network.IPC.Server
                     error => Console.WriteLine("Error: " + error.Message),
                     () => Console.WriteLine("Socket Disconnected"),
                     Cancel.Token);
+            Console.WriteLine("Server Init");
         }
 
         private static IEnumerable<ParameterInfo> ExtractProgressParameter(ParameterInfo[] parameters, out Type progressReportingType)
@@ -104,7 +105,7 @@ namespace DarkSoul.Network.IPC.Server
                 && parameter.ParameterType.GetGenericTypeDefinition() == typeof(IProgress<>);
         }
 
-        public IObserver<ArraySegment<byte>> ToClientObserver(Socket socket, CancellationToken token)
+        private IObserver<ArraySegment<byte>> ToClientObserver(Socket socket, CancellationToken token)
         {
             return ToStreamObserver(new NetworkStream(socket), token);
         }
@@ -115,12 +116,12 @@ namespace DarkSoul.Network.IPC.Server
             {
                 var response = Encoding.UTF8.GetString(buffer.Array, 0, buffer.Count);
                 var result = this.JsonDeserializeObject<ServerSoulInvocation>(response);
-
+                
                 ServerMsgResult msg;
                 if (_handlers.TryGetValue(result.Method, out var value))
                 {
                     IJsonValue[] parameterValues = result.Args.Select(x => new JRawValue(x)).ToArray();
-                    var args = DefaultParameterResolver.ResolveMethodParameters(_params[result.Method], parameterValues);
+                    var args = DefaultParameterResolver.ResolveMethodParameters(_params[result.Method], parameterValues).ToArray();
                     var messageToSend = value.Invoke(value.Target, args);
                     msg = new ServerMsgResult
                     {

@@ -9,11 +9,11 @@ using System.Threading;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Net.Sockets;
-using System.ServiceModel.Channels;
 using DarkSoul.Network.Extension;
-using System.Reactive.Disposables;
 using Newtonsoft.Json.Linq;
 using DarkSoul.Network.Interface;
+using System.Reactive;
+using System.Diagnostics;
 
 namespace DarkSoul.Network.IPC
 {
@@ -38,11 +38,9 @@ namespace DarkSoul.Network.IPC
 
         #region Props
 
-        public JsonSerializer JsonSerializer { get; internal set; }
+        public JsonSerializer JsonSerializer { get; internal set; } = new JsonSerializer();
 
         public CancellationTokenSource Cancel { get; private set; }
-
-        public Socket ClientSocket { get; private set; }
 
         #endregion
 
@@ -53,7 +51,7 @@ namespace DarkSoul.Network.IPC
         /// </summary>
         /// <param name="name"></param>
         /// <returns></returns>
-        public SoulProxy CreateSoulProxy(string name = "default") //add functionality later for name
+        public SoulProxy CreateSoulProxy(string name = "soulproxy") //add functionality later for name
         {
             return new SoulProxy(this, name);
         }
@@ -79,46 +77,23 @@ namespace DarkSoul.Network.IPC
 
         private void Init(string ip, int port)
         {
-            var bufferManager = BufferManager.CreateBufferManager(2 << 16, 2 << 8);
-
             new IPEndPoint(IPAddress.Parse(ip), port).ToConnectObservable()
-                .Subscribe(socket =>
-                {
-                    var frameClient = socket.ToFrameClientSubject(bufferManager, Cancel.Token, out ClientStream);
-
-                    var observerDisposable =
-                        frameClient
-                            .ObserveOn(TaskPoolScheduler.Default)
-                            .Subscribe(
-                                disposableBuffer =>
-                                {
-                                    var response = Encoding.UTF8.GetString(disposableBuffer.Value.Array, 0, disposableBuffer.Value.Count);
-                                    var result = this.JsonDeserializeObject<JObject>(response);
-
-                                    Console.WriteLine("Read: " + response);
-                                    if (result["I"] != null)                                    
-                                        OnReceived(result);                                    
-                                    else                                    
-                                        throw new Exception("I property it's null");
-                                    
-                                    disposableBuffer.Dispose();
-                                },
-                                error => Console.WriteLine("Error: " + error.Message),
-                                () => Console.WriteLine("OnCompleted: SoulConnection"));
-
-                    observerDisposable.Dispose();
-
-                    Cancel.Cancel();
-                },
-                error =>
-                {
-                    Console.WriteLine("Falied to connect: " + error.Message);
-                });
-
-            Cancel.Token.WaitHandle.WaitOne();
+                .ObserveOn(TaskPoolScheduler.Default)
+                .Subscribe(
+                    client =>
+                        client.ToClientObservable(1024)
+                            .Finally(() => {
+                                client.Dispose();
+                                Console.WriteLine("Server Disconnected"); 
+                            })
+                            .Subscribe(ToClientObserver(client, Cancel.Token, out ClientStream), Cancel.Token),
+                    error => Console.WriteLine("Error: " + error.Message),
+                    () => Console.WriteLine("Client Socket Disconnected"),
+                    Cancel.Token);
+            Console.WriteLine("Client Init");
         }
 
-        public Task Send(object value)
+        public Task Send(string value)
         {
             if (ClientStream == null)
             {
@@ -133,35 +108,52 @@ namespace DarkSoul.Network.IPC
                 return tcs.Task;
             }
             //send over socket
-            var writeBuffer = Encoding.UTF8.GetBytes(this.JsonSerializeObject(value));
-            var disposableBuffer = DisposableValue.Create(new ArraySegment<byte>(writeBuffer), Disposable.Empty);
-            var headerBuffer = BitConverter.GetBytes(disposableBuffer.Value.Count);
+            var writeBuffer = Encoding.UTF8.GetBytes(value);
 
             return Task.WhenAll(new Task[]
                     {
-                        ClientStream.WriteAsync(headerBuffer, 0, headerBuffer.Length, Cancel.Token),
-                        ClientStream.WriteAsync(disposableBuffer.Value.Array, 0, disposableBuffer.Value.Count, Cancel.Token),
+                        ClientStream.WriteAsync(writeBuffer, 0, writeBuffer.Length, Cancel.Token),
                         ClientStream.FlushAsync(Cancel.Token)
                     });
         }
 
-        private void OnReceived(JObject message)
+        private void OnReceived(MsgResult result)
         {
-            if (message["I"] != null)
+            Action<MsgResult> callback;
+
+            lock (_callbacks)
             {
-                var result = message.ToObject<MsgResult>(JsonSerializer);
-                Action<MsgResult> callback;
-
-                lock (_callbacks)
-                {
-                    if (_callbacks.TryGetValue(result.Id, out callback))                    
-                        _callbacks.Remove(result.Id);                    
-                    else                    
-                        Console.WriteLine("Callback with id " + result.Id + " not found!");                    
-                }
-
-                callback?.Invoke(result);
+                if (_callbacks.TryGetValue(result.Id, out callback))
+                    _callbacks.Remove(result.Id);
+                else
+                    Console.WriteLine("Callback with id " + result.Id + " not found!");
             }
+
+            callback?.Invoke(result);
+        }
+
+        private IObserver<ArraySegment<byte>> ToClientObserver(Socket socket, CancellationToken token, out NetworkStream stream)
+        {
+            return ToStreamObserver(stream = new NetworkStream(socket), token);
+        }
+
+        private IObserver<ArraySegment<byte>> ToStreamObserver(NetworkStream stream, CancellationToken token)
+        {
+            return Observer.Create<ArraySegment<byte>>(buffer =>
+            {
+                var response = Encoding.UTF8.GetString(buffer.Array, 0, buffer.Array.Length);
+
+                try
+                {
+                    var result = this.JsonDeserializeObject<MsgResult>(response);
+
+                    OnReceived(result);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"A error ocurred when deserialize MsgResult - Message: {ex.Message} - Trace: {ex.StackTrace}");
+                } 
+            });
         }
 
         #endregion

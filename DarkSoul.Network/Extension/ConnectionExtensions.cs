@@ -1,5 +1,4 @@
 ﻿using DarkSoul.Network.Interface;
-using DarkSoul.Network.IPC;
 using Newtonsoft.Json;
 using System;
 using System.Diagnostics.CodeAnalysis;
@@ -11,6 +10,19 @@ namespace DarkSoul.Network.Extension
 {
     public static class ConnectionExtensions
     {
+        public static T Parse<T>(this JsonSerializer serializer, string json)
+        {
+            if (serializer == null)
+            {
+                throw new ArgumentNullException("serializer");
+            }
+
+            using (var reader = new StringReader(json))
+            {
+                return (T)serializer.Deserialize(reader, typeof(T));
+            }
+        }
+
         public static T JsonDeserializeObject<T>(this IConnection connection, string jsonValue)
         {
             if (connection == null)
