@@ -17,7 +17,6 @@ using DarkSoul.Network.IPC.Server.Descriptors;
 using System.Collections.Generic;
 using DarkSoul.Network.IPC.Server.Lookup;
 using DarkSoul.Network.IPC.Server.Json;
-using System.Diagnostics;
 
 namespace DarkSoul.Network.IPC.Server
 {
@@ -52,8 +51,10 @@ namespace DarkSoul.Network.IPC.Server
                 var methods = message.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
                 foreach (var method in methods)
                 {
+                    if (_handlers.ContainsKey(method.Name))
+                        throw new Exception($"Handlers can't have same name, method: {method.Name}");
                     _handlers.TryAdd(method.Name, DynamicDelegateStaticFactory.CreateMethodCaller(method));
-                    var param = ExtractProgressParameter(method.GetParameters(), out var type);
+                    var param = method.GetParameters();
                     _params.TryAdd(method.Name, param.Select(x => new ParameterDescriptor {
                         Name = x.Name,
                         ParameterType = x.ParameterType
@@ -78,31 +79,6 @@ namespace DarkSoul.Network.IPC.Server
                     () => Console.WriteLine("Socket Disconnected"),
                     Cancel.Token);
             Console.WriteLine("Server Init");
-        }
-
-        private static IEnumerable<ParameterInfo> ExtractProgressParameter(ParameterInfo[] parameters, out Type progressReportingType)
-        {
-            var lastParameter = parameters.LastOrDefault();
-            progressReportingType = null;
-
-            if (IsProgressType(lastParameter))
-            {
-                // This method takes an IProgress<T> as the last parameter and thus supports progress reporting
-                progressReportingType = lastParameter.ParameterType.GenericTypeArguments[0];
-
-                // Strip the IProgress<T> param from the method descriptor params list
-                // as we don't want to include it when trying to match methods
-                return parameters.Take(parameters.Length - 1);
-            }
-
-            return parameters;
-        }
-
-        private static bool IsProgressType(ParameterInfo parameter)
-        {
-            return parameter != null
-                && parameter.ParameterType.GetTypeInfo().IsGenericType
-                && parameter.ParameterType.GetGenericTypeDefinition() == typeof(IProgress<>);
         }
 
         private IObserver<ArraySegment<byte>> ToClientObserver(Socket socket, CancellationToken token)

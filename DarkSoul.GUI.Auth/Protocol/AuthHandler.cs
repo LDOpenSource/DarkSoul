@@ -16,8 +16,9 @@ namespace DarkSoul.GUI.Auth.Protocol
         }
 
         [Handle(4)]
-        public static IEnumerable<NetworkMessage> HandleIdentificationMessage(Stream client, IdentificationMessage message)
+        public static IEnumerable<NetworkMessage> HandleIdentificationMessage(AuthClient client, IdentificationMessage message)
         {
+            client.Disconnect();
             // Add to queue etc...
             return Enumerable.Empty<NetworkMessage>();
         }

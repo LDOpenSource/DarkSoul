@@ -28,6 +28,10 @@ namespace DarkSoul.Network
         /// Network Ip to bind
         /// </summary>
         public string Ip { get; private set; }
+
+        /// <summary>
+        /// Cancelation Token
+        /// </summary>
         public CancellationTokenSource Cancel { get; private set; }
 
         public void Initialize(Assembly assembly)
@@ -47,19 +51,24 @@ namespace DarkSoul.Network
                 .ObserveOn(TaskPoolScheduler.Default)
                 .Subscribe(
                     client =>
+                    {
+                        BaseClient baseClient = null;
                         client.ToClientObservable(1024)
-                            .Finally(() => {
-                                client.Dispose();
-                                Console.WriteLine("Client Disconnected"); //TODO ClientManager Add/Remove
-                            })
-                            .Subscribe(ToClientObserver(client, Cancel.Token), Cancel.Token),
+                            .Finally(() => baseClient?.Disconnect())
+                            .Subscribe(ToClientObserver(client, Cancel.Token, out baseClient), Cancel.Token);
+                    },
                     error => Console.WriteLine("Error: " + error.Message),
                     () => Console.WriteLine("Socket Disconnected"),
                     Cancel.Token);
         }
 
+        public void Disconnect()
+        {
+            Cancel.Cancel();
+        }
+
         public abstract void Init();
 
-        public abstract IObserver<ArraySegment<byte>> ToClientObserver(Socket socket, CancellationToken token);
+        public abstract IObserver<ArraySegment<byte>> ToClientObserver(Socket socket, CancellationToken token, out BaseClient client);
     }
 }
